@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Static</title>
+</head>
+<style>
+    body {
+        background-color: #fff;
+        padding: 0;
+        margin: 0;
+    }
+
+    .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    #dir-box {
+        width: 40rem;
+    }
+
+    ul {
+        list-style: none;
+    }
+
+    li {
+        padding: 3px;
+    }
+
+    .li-file {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        border-bottom: 1px solid #f7f7f7;
+    }
+
+    .li-file:hover {
+        border-color: #3491FA;
+    }
+
+    a {
+        text-decoration: none;
+        color: #3491FA;
+    }
+
+    a:hover {
+        transform: scale(1.1);
+    }
+
+    .btn-box > a {
+        color: #23C343;
+    }
+</style>
+<body>
+<div class="container">
+    <div id="dir-box">
+        正在加载目录...
+    </div>
+</div>
+</body>
+<script>
+    const repo = "slowlyo/static"
+    const api = "https://api.github.com/repos/Slowlyo/static/contents"
+
+    const getDir = async (path = "") => {
+        const res = await fetch(`${api}/${path}`)
+        const data = await res.json()
+
+        for (let i = 0; i < data.length; i++) {
+            const item = data[i]
+            if (item.type === "dir") {
+                item.children = await getDir(`${path}/${item.name}`)
+            }
+        }
+
+        return data
+    }
+
+    const liItem = (item) => {
+        if (item.type == "dir") {
+            return `<li>${item.name}</li>`
+        }
+
+        return `
+<li class="li-file">
+    <a href="${item.html_url}" target="_blank">${item.name}</a>
+    <div class="btn-box">
+        <a href="https://cdn.jsdelivr.net/gh/${repo}/${item.path}" target="_blank">jsDelivr</a>
+        &nbsp;
+        <a href="https://cdn.staticaly.com/gh/${repo}/master/${item.path}" target="_blank">staticaly</a>
+        &nbsp;
+        <a href="https://rawcdn.githack.com/${repo}/master/${item.path}" target="_blank">githack</a>
+    </div>
+</li>
+`
+    }
+
+    const initDirDom = async () => {
+        const dirs = await getDir()
+
+        const setLi = (list) => {
+            let content = "<ul>"
+            list?.forEach((item) => {
+                content += liItem(item)
+
+                if (item.children) {
+                    content += setLi(item.children)
+                }
+            })
+            content += "</ul>"
+            return content
+        }
+
+        const dirDom = document.getElementById("dir-box")
+        dirDom.innerHTML = setLi(dirs)
+    }
+
+    initDirDom()
+</script>
+</html>
